@@ -95,7 +95,8 @@ def runRanker(trainingset, testset):
         # Check ANN performance after training.
         nn.countMisorderedPairs(testPatterns)
 
-    plt.plot(run, testError, 'r', run, trainingError, 'g')
+    r = [x for x in xrange(26)]
+    plt.plot(r, test_error, 'r', r, training_error, 'g')
     plt.show()
 
 
