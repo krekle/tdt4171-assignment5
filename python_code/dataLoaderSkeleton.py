@@ -102,14 +102,14 @@ def runner():
     training, test = runRanker(iterations)
 
     # Remove one iteration form the loop for initialization
-    for i in range(runs - 1):
+    for i in xrange(runs - 1):
         tr, te = runRanker(iterations)
         print tr
         print te
 
         # Plot runs
-        plt.plot(tr, "k--", label="Training: " + str(i))
-        plt.plot(te, "k-", label="Test: " + str(i))
+        #plt.plot(tr, "k--", label="Training: " + str(i))
+        #plt.plot(te, "k-", label="Test: " + str(i))
 
         # Accumulate for avgs
         for itemIndex in xrange(len(tr)):
@@ -122,9 +122,10 @@ def runner():
         test[avgIndex] /= runs
 
     # Plotting avg
-    plt.plot(training, "k--", label="Avg Training")
-    plt.plot(test, "k-", label="Avg Test")
+    plt.plot(training, label="Avg Training")
+    plt.plot(test, label="Avg Test")
 
+    # Axis labels
     plt.xlabel("Error Rate")
     plt.ylabel("Epoch")
 

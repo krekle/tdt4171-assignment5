@@ -90,28 +90,29 @@ class NN:  # Neural Network
         return self.outputActivation
 
     def computeOutputDelta(self):
-        p_ab = logFunc(self.prevOutputActivation - self.outputActivation)
-        self.prevDeltaOutput = logFuncDerivative(self.prevOutputActivation) * (1 - p_ab)
-        self.deltaOutput = logFuncDerivative(self.outputActivation) * (1 - p_ab)
+        pab = logFunc(self.prevOutputActivation - self.outputActivation)
+        self.prevDeltaOutput = logFuncDerivative(self.prevOutputActivation) * (1 - pab)
+        self.deltaOutput = logFuncDerivative(self.outputActivation) * (1 - pab)
 
     def computeHiddenDelta(self):
-        # Implement the delta function for the hidden layer (see exercise text)
-        for h in range(self.numHidden):
-            self.prevDeltaHidden[h] = logFuncDerivative(self.prevHiddenActivations[h]) * self.weightsOutput[h] * (
-            self.prevDeltaOutput - self.deltaOutput)
-            self.deltaHidden[h] = logFuncDerivative(self.hiddenActivations[h]) * self.weightsOutput[h] * (
-            self.prevDeltaOutput - self.deltaOutput)
+        deltaOutputDiff = self.prevDeltaOutput - self.deltaOutput
+        for hiddenIndex in range(self.numHidden):
+            self.prevDeltaHidden[hiddenIndex] = logFuncDerivative(self.prevHiddenActivations[hiddenIndex]) * \
+                                                self.weightsOutput[hiddenIndex] * deltaOutputDiff
+            self.deltaHidden[hiddenIndex] = logFuncDerivative(self.hiddenActivations[hiddenIndex]) * self.weightsOutput[
+                hiddenIndex] * deltaOutputDiff
 
     def updateWeights(self):
-        # Update the weights of the network using the deltas (see exercise text)
-        for i in range(len(self.weightsInput)):
-            for j in range(len(self.weightsInput[i])):
-                self.weightsInput[i][j] += self.learningRate * (
-                    self.prevDeltaHidden[j] * self.prevInputActivations[i] - self.deltaHidden[j] * self.inputActivation[
-                        i])
-        for h in range(len(self.weightsOutput)):
-            self.weightsOutput[h] += self.learningRate * (
-                self.prevDeltaOutput * self.prevHiddenActivations[h] - self.deltaOutput * self.hiddenActivations[h])
+        for index in range(len(self.weightsInput)):
+            for subIndex in range(len(self.weightsInput[index])):
+                self.weightsInput[index][subIndex] += self.learningRate * (
+                    self.prevDeltaHidden[subIndex] * self.prevInputActivations[index] - self.deltaHidden[subIndex] *
+                    self.inputActivation[index])
+
+        for outputIndex in range(len(self.weightsOutput)):
+            self.weightsOutput[outputIndex] += self.learningRate * (
+                self.prevDeltaOutput * self.prevHiddenActivations[outputIndex] - self.deltaOutput *
+                self.hiddenActivations[outputIndex])
 
     def backpropagate(self):
         self.computeOutputDelta()
@@ -141,7 +142,9 @@ class NN:  # Neural Network
             a = self.propagate(pair[0])
             b = self.propagate(pair[1])
 
-            """if self.prevOutputActivation > self.outputActivation:
+            """
+            SORTED DURING PATTERN CREATION
+            if self.prevOutputActivation > self.outputActivation:
                 if pair[0].rating > pair[1].rating:
                     numRight += 1.0
                 else:
@@ -159,6 +162,5 @@ class NN:  # Neural Network
                 numMisses += 1.0
 
         rate_of_error = numMisses / (numRight + numMisses)
-        print "Error: " + str(rate_of_error)
-
+        print "error-rate: " + str(rate_of_error)
         return rate_of_error
