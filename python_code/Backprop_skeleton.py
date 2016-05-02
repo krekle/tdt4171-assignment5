@@ -95,20 +95,23 @@ class NN:  # Neural Network
         self.deltaOutput = logFuncDerivative(self.outputActivation) * (1 - p_ab)
 
     def computeHiddenDelta(self):
-        for hiddenIndex in range(self.numHidden):
-            self.prevDeltaHidden[hiddenIndex] = logFuncDerivative(self.prevHiddenActivations[hiddenIndex]) * self.weightsOutput[hiddenIndex] * (self.prevDeltaOutput - self.deltaOutput)
-            self.deltaHidden[hiddenIndex] = logFuncDerivative(self.hiddenActivations[hiddenIndex]) * self.weightsOutput[hiddenIndex] * (self.prevDeltaOutput - self.deltaOutput)
+        # Implement the delta function for the hidden layer (see exercise text)
+        for h in range(self.numHidden):
+            self.prevDeltaHidden[h] = logFuncDerivative(self.prevHiddenActivations[h]) * self.weightsOutput[h] * (
+            self.prevDeltaOutput - self.deltaOutput)
+            self.deltaHidden[h] = logFuncDerivative(self.hiddenActivations[h]) * self.weightsOutput[h] * (
+            self.prevDeltaOutput - self.deltaOutput)
 
     def updateWeights(self):
+        # Update the weights of the network using the deltas (see exercise text)
         for i in range(len(self.weightsInput)):
             for j in range(len(self.weightsInput[i])):
                 self.weightsInput[i][j] += self.learningRate * (
                     self.prevDeltaHidden[j] * self.prevInputActivations[i] - self.deltaHidden[j] * self.inputActivation[
                         i])
-
         for h in range(len(self.weightsOutput)):
             self.weightsOutput[h] += self.learningRate * (
-                self.prevDeltaOutput * self.prevOutputActivation - self.deltaOutput * self.outputActivation)
+                self.prevDeltaOutput * self.prevHiddenActivations[h] - self.deltaOutput * self.hiddenActivations[h])
 
     def backpropagate(self):
         self.computeOutputDelta()
@@ -131,13 +134,31 @@ class NN:  # Neural Network
             self.backpropagate()
 
     def countMisorderedPairs(self, patterns):
-        miss = 0.0
+        numRight = 0.0
+        numMisses = 0.0
 
         for pair in patterns:
             a = self.propagate(pair[0])
             b = self.propagate(pair[1])
 
-            if a <= b:
-                miss += 1.0
+            """if self.prevOutputActivation > self.outputActivation:
+                if pair[0].rating > pair[1].rating:
+                    numRight += 1.0
+                else:
+                    numMisses += 1.0
+            else:
+                if pair[1].rating > pair[0].rating:
+                    numRight += 1.0
+                else:
+                    numMisses += 1.0
+            """
 
-        return miss / len(patterns)
+            if a > b:
+                numRight += 1.0
+            else:
+                numMisses += 1.0
+
+        rate_of_error = numMisses / (numRight + numMisses)
+        print "Error: " + str(rate_of_error)
+
+        return rate_of_error

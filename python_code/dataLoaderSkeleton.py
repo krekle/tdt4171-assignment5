@@ -57,34 +57,33 @@ def runRanker(iterations, trainingset='datasets/train.txt', testset='datasets/te
     trainingPatterns = []  # For holding all the training patterns we will feed the network
     testPatterns = []  # For holding all the test patterns we will feed the network
 
-
     # Find unique patterns for testing and training
-    for key in dhTraining.dataset.keys():
-        dataInstance = dhTraining.dataset[key]
-        dataInstance.sort(key=lambda data: data.rating, reverse=True)
+    for qid in dhTraining.dataset.keys():
+        dataInstance = dhTraining.dataset[qid]
+        dataInstance.sort(key=lambda obj: obj.rating, reverse=True)
 
-        for current in dataInstance:
-            for other in dataInstance:
-                if not current.rating is other.rating:
-                    trainingPatterns.append([current.features, other.features])
+        for i in xrange(len(dataInstance)):
+            for j in xrange(i + 1, len(dataInstance)):
+                if not (dataInstance[i].rating == dataInstance[j].rating):
+                    trainingPatterns.append([dataInstance[i].features, dataInstance[j].features])
 
-    for key in dhTesting.dataset.keys():
-        dataInstance = dhTesting.dataset[key]
-        dataInstance.sort(key=lambda data: data.rating, reverse=True)
+    for qid in dhTesting.dataset.keys():
+        dataInstance = dhTesting.dataset[qid]
+        dataInstance.sort(key=lambda obj: obj.rating, reverse=True)
 
-        for current in dataInstance:
-            for other in dataInstance:
-                if current.rating is not other.rating:
-                    testPatterns.append([current.features, other.features])
+        for i in xrange(len(dataInstance)):
+            for j in xrange(i + 1, len(dataInstance)):
+                if not (dataInstance[i].rating == dataInstance[j].rating):
+                    testPatterns.append([dataInstance[i].features, dataInstance[j].features])
 
     test_error = list()
     training_error = list()
     print 'Training Initiated ... '
-    test_error.append(nn.countMisorderedPairs(testPatterns))
     training_error.append(nn.countMisorderedPairs(trainingPatterns))
+    test_error.append(nn.countMisorderedPairs(testPatterns))
 
     for i in xrange(iterations):
-        print '[Iteration: {iteration}]'.format(iteration=i + 1)
+        print '[Epoch: {iteration}]'.format(iteration=i + 1)
         # Train
         nn.train(trainingPatterns)
 
@@ -94,13 +93,40 @@ def runRanker(iterations, trainingset='datasets/train.txt', testset='datasets/te
 
     return [training_error, test_error]
 
-def runner():
-    train, test = runRanker(1)
 
-    ##### Plotting
-    # plot errors
-    plt.plot(train, "k--", label="training")
-    plt.plot(test, "k-", label="test")
+def runner():
+    runs = 5
+    iterations = 20
+
+    # Run first to initialize lists
+    training, test = runRanker(iterations)
+
+    # Remove one iteration form the loop for initialization
+    for i in range(runs - 1):
+        tr, te = runRanker(iterations)
+        print tr
+        print te
+
+        # Plot runs
+        plt.plot(tr, "k--", label="Training: " + str(i))
+        plt.plot(te, "k-", label="Test: " + str(i))
+
+        # Accumulate for avgs
+        for itemIndex in xrange(len(tr)):
+            training[itemIndex] += tr[itemIndex]
+            test[itemIndex] += te[itemIndex]
+
+    # Average the results
+    for avgIndex in xrange(len(training)):
+        training[avgIndex] /= runs
+        test[avgIndex] /= runs
+
+    # Plotting avg
+    plt.plot(training, "k--", label="Avg Training")
+    plt.plot(test, "k-", label="Avg Test")
+
+    plt.xlabel("Error Rate")
+    plt.ylabel("Epoch")
 
     # Show legend
     plt.legend()
@@ -110,5 +136,6 @@ def runner():
 
     # Show
     plt.show()
+
 
 runner()
