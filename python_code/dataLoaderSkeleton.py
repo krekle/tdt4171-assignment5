@@ -1,5 +1,6 @@
 import Backprop_skeleton as Bp
 import matplotlib
+
 matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
@@ -45,7 +46,7 @@ class dataHolder:
         return dataset
 
 
-def runRanker(trainingset, testset):
+def runRanker(iterations, trainingset='datasets/train.txt', testset='datasets/test.txt'):
     # Dataholders for training and testset
     dhTraining = dataHolder(trainingset)
     dhTesting = dataHolder(testset)
@@ -56,48 +57,58 @@ def runRanker(trainingset, testset):
     trainingPatterns = []  # For holding all the training patterns we will feed the network
     testPatterns = []  # For holding all the test patterns we will feed the network
 
-    for qid in dhTraining.dataset.keys():
-        # This iterates through every query ID in our training set
-        dataInstance = dhTraining.dataset[qid]  # All data instances (query, features, rating) for query qid
 
+    # Find unique patterns for testing and training
+    for key in dhTraining.dataset.keys():
+        dataInstance = dhTraining.dataset[key]
         dataInstance.sort(key=lambda data: data.rating, reverse=True)
 
         for current in dataInstance:
             for other in dataInstance:
-                if not current is other:
+                if not current.rating is other.rating:
                     trainingPatterns.append([current.features, other.features])
 
-    for qid in dhTesting.dataset.keys():
-        # This iterates through every query ID in our test set
-        dataInstance = dhTesting.dataset[qid]
-
+    for key in dhTesting.dataset.keys():
+        dataInstance = dhTesting.dataset[key]
         dataInstance.sort(key=lambda data: data.rating, reverse=True)
 
         for current in dataInstance:
             for other in dataInstance:
-                if current is not other:
+                if current.rating is not other.rating:
                     testPatterns.append([current.features, other.features])
 
-    # Check ANN performance before training
     test_error = list()
-    test_error.append(nn.countMisorderedPairs(testPatterns))
     training_error = list()
+    print 'Training Initiated ... '
+    test_error.append(nn.countMisorderedPairs(testPatterns))
     training_error.append(nn.countMisorderedPairs(trainingPatterns))
 
-    for i in range(25):
-        # Running 25 iterations, measuring testing performance after each round of training.
-        # Training
-        training_error.append(nn.train(trainingPatterns, iterations=1))
+    for i in xrange(iterations):
+        print '[Iteration: {iteration}]'.format(iteration=i + 1)
+        # Train
+        nn.train(trainingPatterns)
 
-        # Check ann
+        # Check ann performance
+        training_error.append(nn.countMisorderedPairs(trainingPatterns))
         test_error.append(nn.countMisorderedPairs(testPatterns))
 
-        # Check ANN performance after training.
-        nn.countMisorderedPairs(testPatterns)
+    return [training_error, test_error]
 
-    r = [x for x in xrange(26)]
-    plt.plot(r, test_error, 'r', r, training_error, 'g')
+def runner():
+    train, test = runRanker(1)
+
+    ##### Plotting
+    # plot errors
+    plt.plot(train, "k--", label="training")
+    plt.plot(test, "k-", label="test")
+
+    # Show legend
+    plt.legend()
+
+    # Set y window
+    plt.ylim(0, 1)
+
+    # Show
     plt.show()
 
-
-runRanker('datasets/train.txt', 'datasets/test.txt')
+runner()
